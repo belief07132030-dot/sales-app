@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="apple-mobile-web-app-title" content="売上管理">
+<title>売上管理</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+body { font-family: -apple-system, sans-serif; background: #f7f4ef; color: #1a1a1a; max-width: 480px; margin: 0 auto; padding-bottom: 100px; }
+.header { background: #1a1a1a; color: #f7f4ef; padding: 20px 20px 0; }
+.header-sub { font-size: 10px; letter-spacing: 0.15em; color: #888; margin-bottom: 4px; }
+.header-title { font-size: 24px; font-weight: 800; }
+.tabs { display: flex; margin-top: 16px; }
+.tab { flex: 1; background: none; border: none; border-bottom: 2px solid transparent; color: #666; font-size: 12px; font-weight: 700; letter-spacing: 0.08em; padding: 10px 0; cursor: pointer; }
+.tab.active { border-bottom-color: #f7f4ef; color: #f7f4ef; }
+.content { padding: 20px; }
+.field { margin-bottom: 14px; }
+.field label { display: block; font-size: 11px; color: #888; letter-spacing: 0.1em; margin-bottom: 6px; }
+.field input { width: 100%; background: #fff; border: 1px solid #e0dcd6; border-radius: 8px; color: #1a1a1a; font-size: 16px; padding: 12px 14px; outline: none; }
+.total-card { background: #1a1a1a; border-radius: 10px; padding: 14px 16px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+.total-label { font-size: 11px; color: #888; letter-spacing: 0.1em; }
+.total-value { font-size: 22px; font-weight: 800; color: #f7f4ef; }
+.btn-save { width: 100%; background: #1a1a1a; color: #f7f4ef; border: none; border-radius: 10px; padding: 16px; font-size: 15px; font-weight: 700; cursor: pointer; margin-top: 4px; }
+.stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
+.stat-full { grid-column: 1 / -1; }
+.stat-card { background: #fff; border-radius: 10px; padding: 14px 16px; }
+.stat-card-label { font-size: 10px; color: #aaa; letter-spacing: 0.08em; margin-bottom: 4px; }
+.stat-card-value { font-size: 17px; font-weight: 800; }
+.stat-card-value.big { font-size: 24px; }
+.month-btns { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 20px; }
+.month-btn { background: #e8e4de; border: none; border-radius: 20px; padding: 6px 14px; font-size: 13px; font-weight: 600; cursor: pointer; }
+.month-btn.active { background: #1a1a1a; color: #f7f4ef; }
+.record { background: #fff; border-radius: 8px; padding: 12px 14px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; }
+.record-date { font-size: 12px; color: #888; }
+.record-total { font-size: 17px; font-weight: 700; }
+.record-sub { font-size: 11px; color: #aaa; }
+.record-memo { font-size: 11px; color: #aaa; }
+.btn-del { background: none; border: 1px solid #ddd; border-radius: 6px; color: #aaa; font-size: 11px; padding: 6px 10px; cursor: pointer; white-space: nowrap; }
+.btn-export { width: 100%; background: none; border: 1px solid #ccc; border-radius: 8px; color: #888; font-size: 13px; padding: 12px; cursor: pointer; margin-top: 10px; }
+.empty { text-align: center; color: #aaa; margin-top: 40px; font-size: 14px; }
+.toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); background: #1a1a1a; color: #fff; border-radius: 8px; padding: 12px 20px; font-size: 13px; font-weight: 600; white-space: nowrap; opacity: 0; transition: opacity 0.3s; pointer-events: none; z-index: 999; }
+.toast.show { opacity: 1; }
+.section-title { font-size: 11px; color: #888; letter-spacing: 0.1em; margin-bottom: 10px; margin-top: 20px; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-sub">DINNER SALES</div>
+  <div class="header-title">売上管理</div>
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('input')">入力</button>
+    <button class="tab" onclick="switchTab('month')">月別</button>
+    <button class="tab" onclick="switchTab('list')">履歴</button>
+  </div>
+</div>
+
+<div class="content">
+  <!-- 入力 -->
+  <div id="tab-input">
+    <div class="field">
+      <label>日付</label>
+      <input type="date" id="f-date">
+    </div>
+    <div class="field">
+      <label>カード売上</label>
+      <input type="number" id="f-card" placeholder="0" inputmode="numeric">
+    </div>
+    <div class="field">
+      <label>現金売上</label>
+      <input type="number" id="f-cash" placeholder="0" inputmode="numeric">
+    </div>
+    <div id="total-display" style="display:none" class="total-card">
+      <span class="total-label">合計</span>
+      <span class="total-value" id="total-val"></span>
+    </div>
+    <div class="field">
+      <label>メモ（任意）</label>
+      <input type="text" id="f-memo" placeholder="特記事項など">
+    </div>
+    <button class="btn-save" onclick="saveRecord()">保存する</button>
+  </div>
+
+  <!-- 月別 -->
+  <div id="tab-month" style="display:none">
+    <div class="month-btns" id="month-btns"></div>
+    <div id="month-stats"></div>
+  </div>
+
+  <!-- 履歴 -->
+  <div id="tab-list" style="display:none">
+    <div id="list-records"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const STORAGE_KEY = 'sales_app_v1';
+let records = [];
+let currentTab = 'input';
+let currentMonth = null;
+
+function load() {
+  try { records = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]'); } catch { records = []; }
+}
+
+function save() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(records));
+}
+
+function today() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+
+function fmt(n) {
+  return Number(n).toLocaleString('ja-JP') + '円';
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+function switchTab(tab) {
+  currentTab = tab;
+  ['input','month','list'].forEach(t => {
+    document.getElementById('tab-'+t).style.display = t === tab ? 'block' : 'none';
+    document.querySelectorAll('.tab')[['input','month','list'].indexOf(t)].classList.toggle('active', t === tab);
+  });
+  if (tab === 'month') renderMonth();
+  if (tab === 'list') renderList();
+}
+
+// 入力のリアルタイム合計
+['f-card','f-cash'].forEach(id => {
+  document.getElementById(id).addEventListener('input', () => {
+    const card = Number(document.getElementById('f-card').value) || 0;
+    const cash = Number(document.getElementById('f-cash').value) || 0;
+    const total = card + cash;
+    const el = document.getElementById('total-display');
+    if (total > 0) {
+      el.style.display = 'flex';
+      document.getElementById('total-val').textContent = fmt(total);
+    } else {
+      el.style.display = 'none';
+    }
+  });
+});
+
+function saveRecord() {
+  const date = document.getElementById('f-date').value;
+  const card = Number(document.getElementById('f-card').value) || 0;
+  const cash = Number(document.getElementById('f-cash').value) || 0;
+  const memo = document.getElementById('f-memo').value;
+  if (!card && !cash) { showToast('売上を入力してください'); return; }
+  const entry = { id: Date.now(), date, card, cash, total: card+cash, memo };
+  records.unshift(entry);
+  save();
+  document.getElementById('f-card').value = '';
+  document.getElementById('f-cash').value = '';
+  document.getElementById('f-memo').value = '';
+  document.getElementById('total-display').style.display = 'none';
+  showToast('保存しました ✓');
+}
+
+function getMonths() {
+  return [...new Set(records.map(r => r.date.slice(0,7)))].sort().reverse();
+}
+
+function monthStats(month) {
+  const m = records.filter(r => r.date.startsWith(month));
+  const card = m.reduce((s,r) => s+r.card, 0);
+  const cash = m.reduce((s,r) => s+r.cash, 0);
+  const cardFirst = m.filter(r => parseInt(r.date.slice(8)) <= 15).reduce((s,r) => s+r.card, 0);
+  const cardSecond = m.filter(r => parseInt(r.date.slice(8)) > 15).reduce((s,r) => s+r.card, 0);
+  return { card, cash, total: card+cash, cardFirst, cardSecond, records: m };
+}
+
+function renderMonth() {
+  const months = getMonths();
+  if (!currentMonth || !months.includes(currentMonth)) currentMonth = months[0];
+  const btns = document.getElementById('month-btns');
+  btns.innerHTML = months.map(m => {
+    const label = m.replace('-', '年') + '月';
+    return `<button class="month-btn ${m===currentMonth?'active':''}" onclick="selectMonth('${m}')">${label}</button>`;
+  }).join('');
+  if (!months.length) {
+    document.getElementById('month-stats').innerHTML = '<div class="empty">まだデータがありません</div>';
+    return;
+  }
+  const s = monthStats(currentMonth);
+  const records_html = s.records.sort((a,b) => a.date > b.date ? -1 : 1).map(r => `
+    <div class="record">
+      <div>
+        <div class="record-date">${r.date}</div>
+        <div class="record-total">${fmt(r.total)}</div>
+        <div class="record-sub">カード ${fmt(r.card)} ／ 現金 ${fmt(r.cash)}</div>
+        ${r.memo ? `<div class="record-memo">${r.memo}</div>` : ''}
+      </div>
+    </div>
+  `).join('');
+  document.getElementById('month-stats').innerHTML = `
+    <div class="stat-grid">
+      <div class="stat-card stat-full"><div class="stat-card-label">月間合計</div><div class="stat-card-value big">${fmt(s.total)}</div></div>
+      <div class="stat-card"><div class="stat-card-label">カード売上</div><div class="stat-card-value">${fmt(s.card)}</div></div>
+      <div class="stat-card"><div class="stat-card-label">現金売上</div><div class="stat-card-value">${fmt(s.cash)}</div></div>
+      <div class="stat-card"><div class="stat-card-label">カード前半（1〜15日）</div><div class="stat-card-value">${fmt(s.cardFirst)}</div></div>
+      <div class="stat-card"><div class="stat-card-label">カード後半（16〜末日）</div><div class="stat-card-value">${fmt(s.cardSecond)}</div></div>
+    </div>
+    <div class="section-title">明細</div>
+    ${records_html}
+    <button class="btn-export" onclick="exportExcel()">Excelでダウンロード</button>
+  `;
+}
+
+function selectMonth(m) {
+  currentMonth = m;
+  renderMonth();
+}
+
+function renderList() {
+  const el = document.getElementById('list-records');
+  if (!records.length) { el.innerHTML = '<div class="empty">まだデータがありません</div>'; return; }
+  el.innerHTML = records.map(r => `
+    <div class="record">
+      <div>
+        <div class="record-date">${r.date}</div>
+        <div class="record-total">${fmt(r.total)}</div>
+        <div class="record-sub">カード ${fmt(r.card)} ／ 現金 ${fmt(r.cash)}</div>
+        ${r.memo ? `<div class="record-memo">${r.memo}</div>` : ''}
+      </div>
+      <button class="btn-del" onclick="deleteRecord(${r.id})">削除</button>
+    </div>
+  `).join('');
+}
+
+function deleteRecord(id) {
+  records = records.filter(r => r.id !== id);
+  save();
+  renderList();
+  showToast('削除しました');
+}
+
+function exportExcel() {
+  const rows = [['日付','カード売上','現金売上','合計','メモ']];
+  records.forEach(r => rows.push([r.date, r.card, r.cash, r.total, r.memo]));
+  let csv = rows.map(r => r.join(',')).join('\n');
+  const bom = '\uFEFF';
+  const blob = new Blob([bom + csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = '売上管理.csv';
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+// 初期化
+load();
+document.getElementById('f-date').value = today();
+</script>
+</body>
+</html>
